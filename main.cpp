@@ -1,25 +1,23 @@
+#include "bitmaps.hpp"
+
 #include <wx/wxprec.h>
 
 #ifndef WX_PRECOMP
-    #include <wx/wx.h>
+#include <wx/wx.h>
 #endif
 
 #include <wx/aboutdlg.h>
+#include <wx/notebook.h>
+#include <wx/treectrl.h>
+#include <wx/listctrl.h>
 
 class Frame : public wxFrame
 {
 public:
-	Frame(): wxFrame(nullptr, wxID_ANY, "Stealer Checker")
+	Frame() : wxFrame(nullptr, wxID_ANY, "Stealer Checker")
 	{
-		MenuFile = new wxMenu();
-
 		MenuFile->Append(wxID_EXIT);
-
-		MenuHelp = new wxMenu();
-
 		MenuHelp->Append(wxID_ABOUT);
-
-		MenuBar = new wxMenuBar();
 
 		MenuBar->Append(MenuFile, "&File");
 		MenuBar->Append(MenuHelp, "&Help");
@@ -52,17 +50,47 @@ public:
 
 		SetMenuBar(MenuBar);
 
+		ToolBarRemoveTool->Enable(false);
+		ToolBar->Realize();
+
+		LoginsListCtrl->AppendColumn("File");
+		LoginsListCtrl->AppendColumn("Link");
+		LoginsListCtrl->AppendColumn("Username");
+		LoginsListCtrl->AppendColumn("Password");
+
+		WalletsListCtrl->AppendColumn("File");
+		WalletsListCtrl->AppendColumn("Mnemonic");
+		WalletsListCtrl->AppendColumn("Password");
+
+		TokensListCtrl->AppendColumn("File");
+		TokensListCtrl->AppendColumn("Token");
+
+		Notebook->AddPage(FilesTreeCtrl, "Files");
+		Notebook->AddPage(LoginsListCtrl, "Logins");
+		Notebook->AddPage(WalletsListCtrl, "Wallets");
+		Notebook->AddPage(TokensListCtrl, "Tokens");
+
 		Centre();
 	}
 
 private:
-	wxMenuBar* MenuBar;
-	wxMenu* MenuFile, *MenuHelp;
+	wxMenuBar* MenuBar = new wxMenuBar();
+	wxMenu* MenuFile = new wxMenu(), * MenuHelp = new wxMenu();
+
+	wxToolBar* ToolBar = CreateToolBar(wxTB_TEXT);
+	wxToolBarToolBase* ToolBarAddTool = ToolBar->AddTool(wxID_ADD, "Add", wxBitmap(AddBitmap));
+	wxToolBarToolBase* ToolBarRemoveTool = ToolBar->AddTool(wxID_REMOVE, "Remove", wxBitmap(RemoveBitmap));
+
+	wxNotebook* Notebook = new wxNotebook(this, wxID_ANY);
+	wxTreeCtrl* FilesTreeCtrl = new wxTreeCtrl(Notebook, 0, wxDefaultPosition, wxDefaultSize, wxTR_DEFAULT_STYLE | wxTR_SINGLE | wxTR_HIDE_ROOT);
+	wxTreeItemId FilesTreeCtrlRoot = FilesTreeCtrl->AddRoot(wxEmptyString);
+
+	wxListCtrl* LoginsListCtrl = new wxListCtrl(Notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT), *WalletsListCtrl = new wxListCtrl(Notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT), *TokensListCtrl = new wxListCtrl(Notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT);
 };
 
 class Application : public wxApp
 {
-    bool OnInit() override
+	bool OnInit() override
 	{
 		return (new Frame())->Show();
 	}
