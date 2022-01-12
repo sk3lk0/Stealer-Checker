@@ -15,6 +15,8 @@
 
 #include <wx/clipbrd.h>
 
+#include <thread>
+
 class Frame : public wxFrame
 {
 	enum OwnedID
@@ -27,6 +29,9 @@ class Frame : public wxFrame
 public:
 	Frame() : wxFrame(nullptr, wxID_ANY, "Stealer Checker")
 	{
+		Bind(wxEVT_MENU, &Frame::OnAdd, this, wxID_ADD);
+		Bind(wxEVT_MENU, &Frame::OnRemove, this, wxID_REMOVE);
+
 		MenuFile->Append(wxID_EXIT);
 		MenuHelp->Append(wxID_ABOUT);
 
@@ -112,40 +117,6 @@ public:
 		});
 
 		Centre();
-
-		long LoginsListCtrlItem = LoginsListCtrl->InsertItem(LoginsListCtrl->GetItemCount(), "amoveo");
-		LoginsListCtrl->SetItem(LoginsListCtrlItem, 1, "compello");
-		LoginsListCtrl->SetItem(LoginsListCtrlItem, 2, "fluo");
-		LoginsListCtrl->SetItem(LoginsListCtrlItem, 3, "hoc");
-
-		LoginsListCtrlItem = LoginsListCtrl->InsertItem(LoginsListCtrl->GetItemCount(), "adstringo");
-		LoginsListCtrl->SetItem(LoginsListCtrlItem, 1, "alioqui");
-		LoginsListCtrl->SetItem(LoginsListCtrlItem, 2, "delecto");
-		LoginsListCtrl->SetItem(LoginsListCtrlItem, 3, "edo");
-
-		long WalletsListCtrlItem = WalletsListCtrl->InsertItem(WalletsListCtrl->GetItemCount(), "huius");
-		WalletsListCtrl->SetItem(WalletsListCtrlItem, 1, "mussito");
-		WalletsListCtrl->SetItem(WalletsListCtrlItem, 2, "plaustrum");
-
-		WalletsListCtrlItem = WalletsListCtrl->InsertItem(WalletsListCtrl->GetItemCount(), "acidus");
-		WalletsListCtrl->SetItem(WalletsListCtrlItem, 1, "aliquanta");
-		WalletsListCtrl->SetItem(WalletsListCtrlItem, 2, "amitto");
-
-		WalletsListCtrlItem = WalletsListCtrl->InsertItem(WalletsListCtrl->GetItemCount(), "aliquantus");
-		WalletsListCtrl->SetItem(WalletsListCtrlItem, 1, "determino");
-		WalletsListCtrl->SetItem(WalletsListCtrlItem, 2, "excipio");
-
-		long TokensListCtrlItem = TokensListCtrl->InsertItem(TokensListCtrl->GetItemCount(), "pluvia");
-		TokensListCtrl->SetItem(TokensListCtrlItem, 1, "tabellae");
-
-		TokensListCtrlItem = TokensListCtrl->InsertItem(TokensListCtrl->GetItemCount(), "reprehendo");
-		TokensListCtrl->SetItem(TokensListCtrlItem, 1, "sibimet");
-
-		TokensListCtrlItem = TokensListCtrl->InsertItem(TokensListCtrl->GetItemCount(), "tergus");
-		TokensListCtrl->SetItem(TokensListCtrlItem, 1, "emerio");
-
-		TokensListCtrlItem = TokensListCtrl->InsertItem(TokensListCtrl->GetItemCount(), "absorbeo");
-		TokensListCtrl->SetItem(TokensListCtrlItem, 1, "aqua");
 	}
 
 private:
@@ -161,6 +132,68 @@ private:
 	wxTreeItemId FilesTreeCtrlRoot = FilesTreeCtrl->AddRoot(wxEmptyString);
 
 	wxListCtrl* LoginsListCtrl = new wxListCtrl(Notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT), *WalletsListCtrl = new wxListCtrl(Notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT), *TokensListCtrl = new wxListCtrl(Notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT);
+
+	void ProcessPath(const wxString Path)
+	{
+
+	}
+
+	void OnAdd(wxCommandEvent& Event)
+	{
+		wxFileDialog FileDialog(this, wxEmptyString, wxEmptyString, wxEmptyString, "ZIP Archives (*.zip)|*.zip|All Files (*.*)|*.*", wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_MULTIPLE);
+	
+		if (FileDialog.ShowModal() == wxID_OK)
+		{
+			wxArrayString Paths;
+			FileDialog.GetPaths(Paths);
+
+			for (const wxString Path : Paths)
+			{
+				wxTreeItemId FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetRootItem(); wxTreeItemIdValue TreeItemIdValue;
+				FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetFirstChild(FilesTreeCtrlCurrentItem, TreeItemIdValue);
+
+				bool IsUniquePath = true;
+				while (FilesTreeCtrlCurrentItem)
+				{
+					if (Path == FilesTreeCtrl->GetItemText(FilesTreeCtrlCurrentItem))
+					{
+						IsUniquePath = false;
+						break;
+					}
+
+					FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetNextSibling(FilesTreeCtrlCurrentItem);
+				}
+
+				if (!IsUniquePath)
+					continue;
+
+				std::thread PathProcessingThread(&Frame::ProcessPath, this, Path);
+				PathProcessingThread.detach();
+			}
+		}
+	}
+
+	void OnRemove(wxCommandEvent& Event)
+	{
+		const wxString Path = FilesTreeCtrl->GetItemText(FilesTreeCtrl->GetSelection());
+
+		long LoginsListCtrlItem = 0;
+		do
+			LoginsListCtrlItem = LoginsListCtrl->FindItem(wxID_ANY, Path);
+		while (LoginsListCtrl->DeleteItem(LoginsListCtrlItem));
+
+		long WalletsListCtrlItem = 0;
+		do
+			WalletsListCtrlItem = WalletsListCtrl->FindItem(wxID_ANY, Path);
+		while (WalletsListCtrl->DeleteItem(WalletsListCtrlItem));
+
+		long TokensListCtrlItem = 0;
+		do
+			TokensListCtrlItem = TokensListCtrl->FindItem(wxID_ANY, Path);
+		while (TokensListCtrl->DeleteItem(TokensListCtrlItem));
+
+		FilesTreeCtrl->Delete(FilesTreeCtrl->GetSelection());
+	}
 
 	void OnCopy1(wxCommandEvent& Event)
 	{
@@ -275,7 +308,18 @@ private:
 			wxTheClipboard->Close();
 		}
 	}
+
+	void OnClose(wxCloseEvent& Event)
+	{
+		Destroy();
+	}
+
+	wxDECLARE_EVENT_TABLE();
 };
+
+wxBEGIN_EVENT_TABLE(Frame, wxFrame)
+	EVT_CLOSE(Frame::OnClose)
+wxEND_EVENT_TABLE()
 
 class Application : public wxApp
 {
