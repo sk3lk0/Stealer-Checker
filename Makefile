@@ -1,2 +1,2 @@
 all:
-	g++ main.cpp `wx-config --cxxflags --libs` -o StealerChecker
+	g++ main.cpp cjson.c `wx-config --cxxflags --libs` -o StealerChecker
