@@ -43,8 +43,196 @@ class Frame : public wxFrame
 public:
 	Frame() : wxFrame(nullptr, wxID_ANY, "Stealer Checker")
 	{
-		Bind(wxEVT_MENU, &Frame::OnAdd, this, wxID_ADD);
-		Bind(wxEVT_MENU, &Frame::OnRemove, this, wxID_REMOVE);
+		Bind(wxEVT_MENU, [&](wxCommandEvent& Event)
+		{
+			switch (Event.GetId())
+			{
+			case ID_COPY1:
+			{
+				if (wxTheClipboard->Open())
+				{
+					wxString TheNextClipboardDataString;
+
+					long LoginsListCtrlItemIndex = -1;
+					while ((LoginsListCtrlItemIndex = LoginsListCtrl->GetNextItem(LoginsListCtrlItemIndex, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND)
+					{
+						if (TheNextClipboardDataString.size() > 0)
+						{
+							TheNextClipboardDataString.append('\n');
+
+							TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex));
+							TheNextClipboardDataString.append(' ');
+
+							TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex, 1));
+							TheNextClipboardDataString.append(' ');
+
+							TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex, 2));
+							TheNextClipboardDataString.append(' ');
+
+							TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex, 3));
+						}
+						else
+						{
+							TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex));
+							TheNextClipboardDataString.append(' ');
+
+							TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex, 1));
+							TheNextClipboardDataString.append(' ');
+
+							TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex, 2));
+							TheNextClipboardDataString.append(' ');
+
+							TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex, 3));
+						}
+					}
+
+					wxTheClipboard->SetData(new wxTextDataObject(TheNextClipboardDataString));
+					wxTheClipboard->Close();
+				}
+
+				break;
+			}
+			case ID_COPY2:
+			{
+				if (wxTheClipboard->Open())
+				{
+					wxString TheNextClipboardDataString;
+
+					long WalletsListCtrlItemIndex = -1;
+					while ((WalletsListCtrlItemIndex = WalletsListCtrl->GetNextItem(WalletsListCtrlItemIndex, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND)
+					{
+						if (TheNextClipboardDataString.size() > 0)
+						{
+							TheNextClipboardDataString.append('\n');
+
+							TheNextClipboardDataString.append(WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex));
+							TheNextClipboardDataString.append(' ');
+
+							TheNextClipboardDataString.append(WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex, 1));
+							TheNextClipboardDataString.append(' ');
+
+							TheNextClipboardDataString.append(WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex, 2));
+						}
+						else
+						{
+							TheNextClipboardDataString.append(WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex));
+							TheNextClipboardDataString.append(' ');
+
+							TheNextClipboardDataString.append(WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex, 1));
+							TheNextClipboardDataString.append(' ');
+
+							TheNextClipboardDataString.append(WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex, 2));
+						}
+					}
+
+					wxTheClipboard->SetData(new wxTextDataObject(TheNextClipboardDataString));
+					wxTheClipboard->Close();
+				}
+
+				break;
+			}
+			case ID_COPY3:
+			{
+				if (wxTheClipboard->Open())
+				{
+					wxString TheNextClipboardDataString;
+
+					long TokensListCtrlItemIndex = -1;
+					while ((TokensListCtrlItemIndex = TokensListCtrl->GetNextItem(TokensListCtrlItemIndex, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND)
+					{
+						if (TheNextClipboardDataString.size() > 0)
+						{
+							TheNextClipboardDataString.append('\n');
+
+							TheNextClipboardDataString.append(TokensListCtrl->GetItemText(TokensListCtrlItemIndex));
+							TheNextClipboardDataString.append(' ');
+
+							TheNextClipboardDataString.append(TokensListCtrl->GetItemText(TokensListCtrlItemIndex, 1));
+						}
+						else
+						{
+							TheNextClipboardDataString.append(TokensListCtrl->GetItemText(TokensListCtrlItemIndex));
+							TheNextClipboardDataString.append(' ');
+
+							TheNextClipboardDataString.append(TokensListCtrl->GetItemText(TokensListCtrlItemIndex, 1));
+						}
+					}
+
+					wxTheClipboard->SetData(new wxTextDataObject(TheNextClipboardDataString));
+					wxTheClipboard->Close();
+				}
+
+				break;
+			}
+			case wxID_ADD:
+			{
+				wxFileDialog FileDialog(this, wxEmptyString, wxEmptyString, wxEmptyString, "ZIP Archives (*.zip)|*.zip|All Files (*.*)|*.*", wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_MULTIPLE);
+
+				if (FileDialog.ShowModal() == wxID_OK)
+				{
+					wxArrayString Paths;
+					FileDialog.GetPaths(Paths);
+
+					for (const wxString Path : Paths)
+					{
+						wxTreeItemId FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetRootItem(); wxTreeItemIdValue TreeItemIdValue;
+						FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetFirstChild(FilesTreeCtrlCurrentItem, TreeItemIdValue);
+
+						bool IsUniquePath = true;
+						while (FilesTreeCtrlCurrentItem)
+						{
+							if (Path == FilesTreeCtrl->GetItemText(FilesTreeCtrlCurrentItem))
+							{
+								IsUniquePath = false;
+								break;
+							}
+
+							FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetNextSibling(FilesTreeCtrlCurrentItem);
+						}
+
+						if (!IsUniquePath)
+							continue;
+
+						std::thread PathProcessingThread(&Frame::ProcessPath, this, Path);
+						PathProcessingThread.detach();
+
+						RecentFilesFileHistory->AddFileToHistory(Path);
+
+						if (!MenuFileRecentFilesSubMenu->IsEnabled())
+							MenuFileRecentFilesSubMenu->Enable(true);
+					}
+				}
+
+				break;
+			}
+			case wxID_REMOVE:
+			{
+				const wxString Path = FilesTreeCtrl->GetItemText(FilesTreeCtrl->GetSelection());
+
+				long LoginsListCtrlItem = 0;
+				do
+					LoginsListCtrlItem = LoginsListCtrl->FindItem(wxID_ANY, Path);
+				while (LoginsListCtrl->DeleteItem(LoginsListCtrlItem));
+
+				long WalletsListCtrlItem = 0;
+				do
+					WalletsListCtrlItem = WalletsListCtrl->FindItem(wxID_ANY, Path);
+				while (WalletsListCtrl->DeleteItem(WalletsListCtrlItem));
+
+				long TokensListCtrlItem = 0;
+				do
+					TokensListCtrlItem = TokensListCtrl->FindItem(wxID_ANY, Path);
+				while (TokensListCtrl->DeleteItem(TokensListCtrlItem));
+
+				FilesTreeCtrl->Delete(FilesTreeCtrl->GetSelection());
+
+				break;
+			}
+			default:
+				Event.Skip();
+				break;
+			}
+		});
 
 		RecentFilesFileHistory->SetMenuPathStyle(wxFH_PATH_SHOW_ALWAYS);
 		RecentProjectsFileHistory->SetMenuPathStyle(wxFH_PATH_SHOW_ALWAYS);
@@ -60,6 +248,8 @@ public:
 		MenuFile->Append(wxID_SAVEAS);
 		MenuFile->Enable(wxID_SAVEAS, false);
 		MenuFile->AppendSeparator();
+		MenuFileRecentFilesSubMenu = MenuFile->AppendSubMenu(RecentFilesMenu, "Recent Files");
+		MenuFileRecentProjectsSubMenu = MenuFile->AppendSubMenu(RecentProjectsMenu, "Recent Projects");
 		MenuFile->AppendSeparator();
 		MenuFile->Append(wxID_EXIT);
 		MenuHelp->Append(wxID_ABOUT);
@@ -77,6 +267,17 @@ public:
 		{
 			switch (Event.GetId())
 			{
+			case wxID_OPEN:
+				break;
+			case wxID_NEW:
+				break;
+			case wxID_SAVE:
+				break;
+			case wxID_SAVEAS:
+				break;
+			case wxID_EXIT:
+				Close(true);
+				break;
 			case wxID_ABOUT:
 			{
 				wxAboutDialogInfo AboutDialogInfo;
@@ -90,9 +291,6 @@ public:
 
 				break;
 			}
-			case wxID_EXIT:
-				Close(true);
-				break;
 			default:
 				Event.Skip();
 				break;
@@ -121,32 +319,29 @@ public:
 		Notebook->AddPage(WalletsListCtrl, "Wallets");
 		Notebook->AddPage(TokensListCtrl, "Tokens");
 
-		Bind(wxEVT_MENU, &Frame::OnCopy1, this, ID_COPY1);
 		LoginsListCtrl->Bind(wxEVT_LIST_ITEM_RIGHT_CLICK, [&](wxListEvent& Event)
 		{
 			wxMenu Menu;
 
-			Menu.Append(new wxMenuItem(&Menu, ID_COPY1, "asd"));
+			Menu.Append(new wxMenuItem(&Menu, ID_COPY1, "Copy"));
 
 			PopupMenu(&Menu);
 		});
 
-		Bind(wxEVT_MENU, &Frame::OnCopy2, this, ID_COPY2);
 		WalletsListCtrl->Bind(wxEVT_LIST_ITEM_RIGHT_CLICK, [&](wxListEvent& Event)
 		{
 			wxMenu Menu;
 
-			Menu.Append(new wxMenuItem(&Menu, ID_COPY2));
+			Menu.Append(new wxMenuItem(&Menu, ID_COPY2, "Copy"));
 
 			PopupMenu(&Menu);
 		});
 
-		Bind(wxEVT_MENU, &Frame::OnCopy3, this, ID_COPY3);
 		TokensListCtrl->Bind(wxEVT_LIST_ITEM_RIGHT_CLICK, [&](wxListEvent& Event)
 		{
 			wxMenu Menu;
 
-			Menu.Append(new wxMenuItem(&Menu, ID_COPY3));
+			Menu.Append(new wxMenuItem(&Menu, ID_COPY3, "Copy"));
 
 			PopupMenu(&Menu);
 		});
@@ -161,7 +356,7 @@ private:
 	wxFileHistory* RecentFilesFileHistory = new wxFileHistory(8, RECENT_FILE_1);
 	wxFileHistory* RecentProjectsFileHistory = new wxFileHistory(4, RECENT_PROJECT_1);
 
-	wxMenuItem* MenuFileRecentFilesSubMenu = MenuFile->AppendSubMenu(RecentFilesMenu, "Recent Files"), *MenuFileRecentProjectsSubMenu = MenuFile->AppendSubMenu(RecentProjectsMenu, "Recent Projects");
+	wxMenuItem* MenuFileRecentFilesSubMenu, *MenuFileRecentProjectsSubMenu;
 
 	wxToolBar* ToolBar = CreateToolBar(wxTB_TEXT);
 	wxToolBarToolBase* ToolBarAddTool = ToolBar->AddTool(wxID_ADD, "Add", wxBitmap(AddBitmap));
@@ -176,182 +371,6 @@ private:
 	void ProcessPath(const wxString Path)
 	{
 
-	}
-
-	void OnAdd(wxCommandEvent& Event)
-	{
-		wxFileDialog FileDialog(this, wxEmptyString, wxEmptyString, wxEmptyString, "ZIP Archives (*.zip)|*.zip|All Files (*.*)|*.*", wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_MULTIPLE);
-	
-		if (FileDialog.ShowModal() == wxID_OK)
-		{
-			wxArrayString Paths;
-			FileDialog.GetPaths(Paths);
-
-			for (const wxString Path : Paths)
-			{
-				wxTreeItemId FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetRootItem(); wxTreeItemIdValue TreeItemIdValue;
-				FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetFirstChild(FilesTreeCtrlCurrentItem, TreeItemIdValue);
-
-				bool IsUniquePath = true;
-				while (FilesTreeCtrlCurrentItem)
-				{
-					if (Path == FilesTreeCtrl->GetItemText(FilesTreeCtrlCurrentItem))
-					{
-						IsUniquePath = false;
-						break;
-					}
-
-					FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetNextSibling(FilesTreeCtrlCurrentItem);
-				}
-
-				if (!IsUniquePath)
-					continue;
-
-				std::thread PathProcessingThread(&Frame::ProcessPath, this, Path);
-				PathProcessingThread.detach();
-
-				RecentFilesFileHistory->AddFileToHistory(Path);
-
-				if (!MenuFileRecentFilesSubMenu->IsEnabled())
-					MenuFileRecentFilesSubMenu->Enable(true);
-			}
-		}
-	}
-
-	void OnRemove(wxCommandEvent& Event)
-	{
-		const wxString Path = FilesTreeCtrl->GetItemText(FilesTreeCtrl->GetSelection());
-
-		long LoginsListCtrlItem = 0;
-		do
-			LoginsListCtrlItem = LoginsListCtrl->FindItem(wxID_ANY, Path);
-		while (LoginsListCtrl->DeleteItem(LoginsListCtrlItem));
-
-		long WalletsListCtrlItem = 0;
-		do
-			WalletsListCtrlItem = WalletsListCtrl->FindItem(wxID_ANY, Path);
-		while (WalletsListCtrl->DeleteItem(WalletsListCtrlItem));
-
-		long TokensListCtrlItem = 0;
-		do
-			TokensListCtrlItem = TokensListCtrl->FindItem(wxID_ANY, Path);
-		while (TokensListCtrl->DeleteItem(TokensListCtrlItem));
-
-		FilesTreeCtrl->Delete(FilesTreeCtrl->GetSelection());
-	}
-
-	void OnCopy1(wxCommandEvent& Event)
-	{
-		if (wxTheClipboard->Open())
-		{
-			wxString TheNextClipboardDataString;
-
-			long LoginsListCtrlItemIndex = -1;
-			while ((LoginsListCtrlItemIndex = LoginsListCtrl->GetNextItem(LoginsListCtrlItemIndex, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND)
-			{
-				if (TheNextClipboardDataString.size() > 0)
-				{
-					TheNextClipboardDataString.append('\n');
-
-					TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex));
-					TheNextClipboardDataString.append(' ');
-
-					TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex, 1));
-					TheNextClipboardDataString.append(' ');
-
-					TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex, 2));
-					TheNextClipboardDataString.append(' ');
-
-					TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex, 3));
-				}
-				else
-				{
-					TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex));
-					TheNextClipboardDataString.append(' ');
-
-					TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex, 1));
-					TheNextClipboardDataString.append(' ');
-
-					TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex, 2));
-					TheNextClipboardDataString.append(' ');
-
-					TheNextClipboardDataString.append(LoginsListCtrl->GetItemText(LoginsListCtrlItemIndex, 3));
-				}
-			}
-
-			wxTheClipboard->SetData(new wxTextDataObject(TheNextClipboardDataString));
-			wxTheClipboard->Close();
-		}
-	}
-
-	void OnCopy2(wxCommandEvent& Event)
-	{
-		if (wxTheClipboard->Open())
-		{
-			wxString TheNextClipboardDataString;
-
-			long WalletsListCtrlItemIndex = -1;
-			while ((WalletsListCtrlItemIndex = WalletsListCtrl->GetNextItem(WalletsListCtrlItemIndex, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND)
-			{
-				if (TheNextClipboardDataString.size() > 0)
-				{
-					TheNextClipboardDataString.append('\n');
-					
-					TheNextClipboardDataString.append(WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex));
-					TheNextClipboardDataString.append(' ');
-
-					TheNextClipboardDataString.append(WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex, 1));
-					TheNextClipboardDataString.append(' ');
-
-					TheNextClipboardDataString.append(WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex, 2));
-				}
-				else
-				{
-					TheNextClipboardDataString.append(WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex));
-					TheNextClipboardDataString.append(' ');
-
-					TheNextClipboardDataString.append(WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex, 1));
-					TheNextClipboardDataString.append(' ');
-
-					TheNextClipboardDataString.append(WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex, 2));
-				}
-			}
-
-			wxTheClipboard->SetData(new wxTextDataObject(TheNextClipboardDataString));
-			wxTheClipboard->Close();
-		}
-	}
-
-	void OnCopy3(wxCommandEvent& Event)
-	{
-		if (wxTheClipboard->Open())
-		{
-			wxString TheNextClipboardDataString;
-
-			long TokensListCtrlItemIndex = -1;
-			while ((TokensListCtrlItemIndex = TokensListCtrl->GetNextItem(TokensListCtrlItemIndex, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED)) != wxNOT_FOUND)
-			{
-				if (TheNextClipboardDataString.size() > 0)
-				{
-					TheNextClipboardDataString.append('\n');
-
-					TheNextClipboardDataString.append(TokensListCtrl->GetItemText(TokensListCtrlItemIndex));
-					TheNextClipboardDataString.append(' ');
-
-					TheNextClipboardDataString.append(TokensListCtrl->GetItemText(TokensListCtrlItemIndex, 1));
-				}
-				else
-				{
-					TheNextClipboardDataString.append(TokensListCtrl->GetItemText(TokensListCtrlItemIndex));
-					TheNextClipboardDataString.append(' ');
-
-					TheNextClipboardDataString.append(TokensListCtrl->GetItemText(TokensListCtrlItemIndex, 1));
-				}
-			}
-
-			wxTheClipboard->SetData(new wxTextDataObject(TheNextClipboardDataString));
-			wxTheClipboard->Close();
-		}
 	}
 
 	void OnClose(wxCloseEvent& Event)
