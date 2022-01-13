@@ -60,8 +60,6 @@ public:
 		MenuFile->Append(wxID_SAVEAS);
 		MenuFile->Enable(wxID_SAVEAS, false);
 		MenuFile->AppendSeparator();
-		wxMenuItem* MenuFileRecentFilesSubMenu = MenuFile->AppendSubMenu(RecentFilesMenu, "Recent Files");
-		wxMenuItem* MenuFileRecentProjectsSubMenu = MenuFile->AppendSubMenu(RecentProjectsMenu, "Recent Projects");
 		MenuFile->AppendSeparator();
 		MenuFile->Append(wxID_EXIT);
 		MenuHelp->Append(wxID_ABOUT);
@@ -163,6 +161,8 @@ private:
 	wxFileHistory* RecentFilesFileHistory = new wxFileHistory(8, RECENT_FILE_1);
 	wxFileHistory* RecentProjectsFileHistory = new wxFileHistory(4, RECENT_PROJECT_1);
 
+	wxMenuItem* MenuFileRecentFilesSubMenu = MenuFile->AppendSubMenu(RecentFilesMenu, "Recent Files"), *MenuFileRecentProjectsSubMenu = MenuFile->AppendSubMenu(RecentProjectsMenu, "Recent Projects");
+
 	wxToolBar* ToolBar = CreateToolBar(wxTB_TEXT);
 	wxToolBarToolBase* ToolBarAddTool = ToolBar->AddTool(wxID_ADD, "Add", wxBitmap(AddBitmap));
 	wxToolBarToolBase* ToolBarRemoveTool = ToolBar->AddTool(wxID_REMOVE, "Remove", wxBitmap(RemoveBitmap));
@@ -209,6 +209,11 @@ private:
 
 				std::thread PathProcessingThread(&Frame::ProcessPath, this, Path);
 				PathProcessingThread.detach();
+
+				RecentFilesFileHistory->AddFileToHistory(Path);
+
+				if (!MenuFileRecentFilesSubMenu->IsEnabled())
+					MenuFileRecentFilesSubMenu->Enable(true);
 			}
 		}
 	}
