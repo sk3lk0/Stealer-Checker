@@ -6,6 +6,8 @@
 #include <wx/wx.h>
 #endif
 
+#include <wx/filehistory.h>
+
 #include <wx/aboutdlg.h>
 
 #include <wx/notebook.h>
@@ -23,7 +25,19 @@ class Frame : public wxFrame
 	{
 		ID_COPY1 = 1,
 		ID_COPY2,
-		ID_COPY3
+		ID_COPY3,
+		RECENT_FILE_1,
+		RECENT_FILE_2,
+		RECENT_FILE_3,
+		RECENT_FILE_4,
+		RECENT_FILE_5,
+		RECENT_FILE_6,
+		RECENT_FILE_7,
+		RECENT_FILE_8,
+		RECENT_PROJECT_1,
+		RECENT_PROJECT_2,
+		RECENT_PROJECT_3,
+		RECENT_PROJECT_4,
 	};
 
 public:
@@ -32,11 +46,34 @@ public:
 		Bind(wxEVT_MENU, &Frame::OnAdd, this, wxID_ADD);
 		Bind(wxEVT_MENU, &Frame::OnRemove, this, wxID_REMOVE);
 
+		RecentFilesFileHistory->SetMenuPathStyle(wxFH_PATH_SHOW_ALWAYS);
+		RecentProjectsFileHistory->SetMenuPathStyle(wxFH_PATH_SHOW_ALWAYS);
+
+		RecentFilesFileHistory->UseMenu(RecentFilesMenu);
+		RecentProjectsFileHistory->UseMenu(RecentProjectsMenu);
+
+		MenuFile->Append(wxID_NEW);
+		MenuFile->Append(wxID_OPEN);
+		MenuFile->AppendSeparator();
+		MenuFile->Append(wxID_SAVE);
+		MenuFile->Enable(wxID_SAVE, false);
+		MenuFile->Append(wxID_SAVEAS);
+		MenuFile->Enable(wxID_SAVEAS, false);
+		MenuFile->AppendSeparator();
+		wxMenuItem* MenuFileRecentFilesSubMenu = MenuFile->AppendSubMenu(RecentFilesMenu, "Recent Files");
+		wxMenuItem* MenuFileRecentProjectsSubMenu = MenuFile->AppendSubMenu(RecentProjectsMenu, "Recent Projects");
+		MenuFile->AppendSeparator();
 		MenuFile->Append(wxID_EXIT);
 		MenuHelp->Append(wxID_ABOUT);
 
 		MenuBar->Append(MenuFile, "&File");
 		MenuBar->Append(MenuHelp, "&Help");
+
+		if (RecentFilesFileHistory->GetCount() == 0)
+			MenuFileRecentFilesSubMenu->Enable(false);
+
+		if (RecentProjectsFileHistory->GetCount() == 0)
+			MenuFileRecentProjectsSubMenu->Enable(false);
 
 		MenuBar->Bind(wxEVT_MENU, [&](wxCommandEvent& Event)
 		{
@@ -121,7 +158,10 @@ public:
 
 private:
 	wxMenuBar* MenuBar = new wxMenuBar();
-	wxMenu* MenuFile = new wxMenu(), * MenuHelp = new wxMenu();
+	wxMenu* MenuFile = new wxMenu(), *MenuHelp = new wxMenu(), *RecentFilesMenu = new wxMenu(), *RecentProjectsMenu = new wxMenu();
+
+	wxFileHistory* RecentFilesFileHistory = new wxFileHistory(8, RECENT_FILE_1);
+	wxFileHistory* RecentProjectsFileHistory = new wxFileHistory(4, RECENT_PROJECT_1);
 
 	wxToolBar* ToolBar = CreateToolBar(wxTB_TEXT);
 	wxToolBarToolBase* ToolBarAddTool = ToolBar->AddTool(wxID_ADD, "Add", wxBitmap(AddBitmap));
