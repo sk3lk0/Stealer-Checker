@@ -1,4 +1,5 @@
 #include "bitmaps.hpp"
+#include "cjson.h"
 
 #include <wx/wxprec.h>
 
@@ -16,6 +17,8 @@
 #include <wx/listctrl.h>
 
 #include <wx/clipbrd.h>
+
+#include <wx/file.h>
 
 #include <thread>
 
@@ -268,13 +271,39 @@ public:
 			switch (Event.GetId())
 			{
 			case wxID_OPEN:
+
 				break;
 			case wxID_NEW:
+
 				break;
 			case wxID_SAVE:
+			{
+				if (ProjectPath.empty())
+				{
+					wxFileDialog FileDialog(this, wxEmptyString, wxEmptyString, wxEmptyString, "Stealer Checker Project Files (*.scproj)|*.scproj|All Files (*.*)|*.*", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+					if (FileDialog.ShowModal() == wxID_OK)
+						ProjectPath = FileDialog.GetPath();
+					else
+						return;
+				}
+
+				SaveProject();
+
 				break;
+			}
 			case wxID_SAVEAS:
+			{
+				wxFileDialog FileDialog(this, wxEmptyString, wxEmptyString, wxEmptyString, "Stealer Checker Project Files (*.scproj)|*.scproj|All Files (*.*)|*.*", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+				if (FileDialog.ShowModal() == wxID_OK)
+				{
+					ProjectPath = FileDialog.GetPath();
+					SaveProject();
+				}
+
 				break;
+			}
 			case wxID_EXIT:
 				Close(true);
 				break;
@@ -368,9 +397,35 @@ private:
 
 	wxListCtrl* LoginsListCtrl = new wxListCtrl(Notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT), *WalletsListCtrl = new wxListCtrl(Notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT), *TokensListCtrl = new wxListCtrl(Notebook, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT);
 
+	wxString ProjectPath = wxEmptyString;
+
 	void ProcessPath(const wxString Path)
 	{
 
+	}
+
+	void SaveProject()
+	{
+		wxFile File(ProjectPath, wxFile::OpenMode::write);
+		cJSON* FileJSON = cJSON_CreateArray();
+
+		wxTreeItemId FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetRootItem(); wxTreeItemIdValue TreeItemIdValue;
+		FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetFirstChild(FilesTreeCtrlCurrentItem, TreeItemIdValue);
+
+		while (FilesTreeCtrlCurrentItem)
+		{
+			cJSON_AddItemToArray(FileJSON, cJSON_CreateString(FilesTreeCtrl->GetItemText(FilesTreeCtrlCurrentItem)));
+			FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetNextSibling(FilesTreeCtrlCurrentItem);
+		}
+
+		File.Write(cJSON_Print(FileJSON)); File.Close(); cJSON_Delete(FileJSON);
+
+		RecentProjectsFileHistory->AddFileToHistory(ProjectPath);
+
+		if (!MenuFileRecentProjectsSubMenu->IsEnabled())
+			MenuFileRecentProjectsSubMenu->Enable(true);
+
+		SetLabel(wxString::Format("Stealer Checker — %s", ProjectPath));
 	}
 
 	void OnClose(wxCloseEvent& Event)
