@@ -428,6 +428,11 @@ private:
 		SetLabel(wxString::Format("Stealer Checker — %s", ProjectPath));
 	}
 
+	void OnCharHook(wxKeyEvent& Event)
+	{
+
+	}
+
 	void OnClose(wxCloseEvent& Event)
 	{
 		Destroy();
@@ -437,6 +442,7 @@ private:
 };
 
 wxBEGIN_EVENT_TABLE(Frame, wxFrame)
+	EVT_CHAR_HOOK(Frame::OnCharHook)
 	EVT_CLOSE(Frame::OnClose)
 wxEND_EVENT_TABLE()
 
