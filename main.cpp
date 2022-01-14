@@ -16,11 +16,19 @@
 #include <wx/treectrl.h>
 #include <wx/listctrl.h>
 
+#include <wx/wfstream.h>
+#include <wx/mstream.h>
+#include <wx/sstream.h>
+
 #include <wx/clipbrd.h>
+
+#include <wx/zipstrm.h>
 
 #include <wx/file.h>
 
 #include <thread>
+#include <mutex>
+#include <map>
 
 class Frame : public wxFrame
 {
@@ -621,7 +629,45 @@ private:
 
 	void ProcessPath(const wxString Path)
 	{
+		MenuFile->Enable(wxID_SAVE, true);
+		MenuFile->Enable(wxID_SAVEAS, true);
 
+		const wxTreeItemId AfterRootTreeItemId = FilesTreeCtrl->AppendItem(FilesTreeCtrlRoot, Path);
+		wxTreeItemId CurrentTreeItemId = AfterRootTreeItemId;
+
+		std::unique_ptr<wxZipEntry> ZipEntry;
+		std::map<wxString, wxTreeItemId> TreeItemIdsMap;
+
+		wxFFileInputStream FileInputStream(Path);
+		wxZipInputStream ZipInputStream(FileInputStream);
+
+		while (ZipEntry.reset(ZipInputStream.GetNextEntry()), ZipEntry.get() != nullptr)
+		{
+			const wxString ZipEntryName = ZipEntry->GetName();
+			wxString NextMutable = ZipEntryName;
+
+			size_t NextPosition = 0;
+			do
+			{
+				if (NextPosition)
+				{
+					wxString NextString = NextMutable.substr(0, NextPosition);
+					NextMutable = NextMutable.substr(NextPosition + 1);
+
+					if (TreeItemIdsMap.find(NextString) == TreeItemIdsMap.end())
+						CurrentTreeItemId = TreeItemIdsMap[NextString] = FilesTreeCtrl->AppendItem(CurrentTreeItemId, NextString);
+					else
+						CurrentTreeItemId = TreeItemIdsMap[NextString];
+				}
+
+				NextPosition = NextMutable.find('\\');
+			} while (NextPosition != wxString::npos);
+
+			if (!NextMutable.IsEmpty())
+				FilesTreeCtrl->AppendItem(CurrentTreeItemId, NextMutable);
+
+			CurrentTreeItemId = AfterRootTreeItemId;
+		}
 	}
 
 	wxDECLARE_EVENT_TABLE();
