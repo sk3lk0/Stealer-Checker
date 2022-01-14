@@ -430,7 +430,35 @@ private:
 
 	void OnCharHook(wxKeyEvent& Event)
 	{
+		if (Event.GetKeyCode() == wxKeyCode::WXK_DELETE || Event.GetKeyCode() == wxKeyCode::WXK_NUMPAD_DELETE)
+		{
+			if (FilesTreeCtrl->GetSelection() == nullptr)
+				return;
 
+			if (FilesTreeCtrl->GetItemParent(FilesTreeCtrl->GetSelection()) != FilesTreeCtrl->GetRootItem())
+				return;
+
+			const wxString Path = FilesTreeCtrl->GetItemText(FilesTreeCtrl->GetSelection());
+
+			long LoginsListCtrlItem = 0;
+			do
+				LoginsListCtrlItem = LoginsListCtrl->FindItem(wxID_ANY, Path);
+			while (LoginsListCtrl->DeleteItem(LoginsListCtrlItem));
+
+			long WalletsListCtrlItem = 0;
+			do
+				WalletsListCtrlItem = WalletsListCtrl->FindItem(wxID_ANY, Path);
+			while (WalletsListCtrl->DeleteItem(WalletsListCtrlItem));
+
+			long TokensListCtrlItem = 0;
+			do
+				TokensListCtrlItem = TokensListCtrl->FindItem(wxID_ANY, Path);
+			while (TokensListCtrl->DeleteItem(TokensListCtrlItem));
+
+			FilesTreeCtrl->Delete(FilesTreeCtrl->GetSelection());
+		}
+
+		Event.Skip();
 	}
 
 	void OnClose(wxCloseEvent& Event)
