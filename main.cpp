@@ -491,10 +491,44 @@ private:
 
 	void OnRecentFile(wxCommandEvent& Event)
 	{
+		wxString RecentFilePath = RecentFilesMenu->GetLabelText(Event.GetId()).substr(3);
+
+		if (!wxFileExists(RecentFilePath))
+		{
+			wxFileDialog FileDialog(this, wxEmptyString, wxEmptyString, wxEmptyString, /*"ZIP Archives (*.zip)|*.zip|RAR Archives (*.rar)|*.rar|TAR Archives (*.tar)|*.tar|CAB Archives (*.cab)|*.cab|All Files (*.*)|*.*"*/ "ZIP Archives (*.zip)|*.zip", wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_MULTIPLE);
+
+			if (FileDialog.ShowModal() == wxID_OK)
+				RecentFilePath = FileDialog.GetPath();
+			else
+				return;
+		}
+
+		wxTreeItemId FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetRootItem(); wxTreeItemIdValue TreeItemIdValue;
+		FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetFirstChild(FilesTreeCtrlCurrentItem, TreeItemIdValue);
+
+		bool IsUniquePath = true;
+		while (FilesTreeCtrlCurrentItem)
+		{
+			if (RecentFilePath == FilesTreeCtrl->GetItemText(FilesTreeCtrlCurrentItem))
+			{
+				IsUniquePath = false;
+				break;
+			}
+
+			FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetNextSibling(FilesTreeCtrlCurrentItem);
+		}
+
+		if (!IsUniquePath)
+			return;
+
+		std::thread PathProcessingThread(&Frame::ProcessPath, this, RecentFilePath);
+		PathProcessingThread.detach();
 	}
 
 	void OnRecentProject(wxCommandEvent& Event)
 	{
+		ProjectPath = RecentProjectsMenu->GetLabelText(Event.GetId()).substr(3);
+		OpenProject();
 	}
 
 	void OpenProject()
@@ -565,6 +599,46 @@ private:
 
 	void OnCommandLeftClick(wxMouseEvent& Event)
 	{
+		FilesTreeCtrl->UnselectAll();
+
+		wxPoint MousePosition = Event.GetPosition();
+		int HitTestOnItemLabel = wxTREE_HITTEST_ONITEMLABEL;
+
+		Event.Skip();
+
+		wxTreeItemId HitTestItemId = FilesTreeCtrl->HitTest(MousePosition, HitTestOnItemLabel);
+
+		if (!HitTestItemId)
+		{
+			if (ToolBarRemoveTool->IsEnabled())
+				ToolBar->EnableTool(ToolBarRemoveTool->GetId(), false);
+
+			return;
+		}
+
+		wxTreeItemId CurrentFilesTreeCtrlItem = HitTestItemId;
+
+		FilesTreeCtrl->SelectItem(CurrentFilesTreeCtrlItem);
+		if (FilesTreeCtrl->GetItemParent(CurrentFilesTreeCtrlItem) != FilesTreeCtrl->GetRootItem())
+		{
+			if (ToolBarRemoveTool->IsEnabled())
+				ToolBar->EnableTool(ToolBarRemoveTool->GetId(), false);
+
+			return;
+		}
+
+		ToolBar->EnableTool(ToolBarRemoveTool->GetId(), true);
+
+		Event.Skip();
+	}
+
+	void OnCommandRightClick(wxCommandEvent& Event)
+	{
+		wxMenu Menu;
+
+		Menu.Append(new wxMenuItem(&Menu, wxID_ADD));
+
+		PopupMenu(&Menu);
 	}
 
 	void TreeItemMenu(wxMouseEvent& Event)
@@ -888,6 +962,7 @@ private:
 };
 
 wxBEGIN_EVENT_TABLE(Frame, wxFrame)
+	EVT_COMMAND_RIGHT_CLICK(wxID_ANY, Frame::OnCommandRightClick)
 	EVT_MENU_RANGE(RECENT_FILE_1, RECENT_FILE_8, Frame::OnRecentFile)
 	EVT_MENU_RANGE(RECENT_PROJECT_1, RECENT_PROJECT_4, Frame::OnRecentProject)
 	EVT_CHAR_HOOK(Frame::OnCharHook)
