@@ -796,7 +796,7 @@ private:
 			{
 				FilesTreeCtrl->AppendItem(CurrentTreeItemId, NextMutable);
 
-				if (!ZipEntryName.StartsWith("Autofills"))
+				if (ZipEntryName.StartsWith("Autofills"))
 				{
 					wxMemoryOutputStream MemoryOutputStream(nullptr);
 					ZipInputStream.Read(MemoryOutputStream);
