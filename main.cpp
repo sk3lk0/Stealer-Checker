@@ -406,6 +406,9 @@ public:
 		ToolBarRemoveTool->Enable(false);
 		ToolBar->Realize();
 
+		FilesTreeCtrl->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(Frame::OnCommandLeftClick), nullptr, this);
+		FilesTreeCtrl->Connect(wxEVT_COMMAND_TREE_ITEM_MENU, wxMouseEventHandler(Frame::TreeItemMenu), nullptr, this);
+
 		LoginsListCtrl->AppendColumn("File");
 		LoginsListCtrl->AppendColumn("Link");
 		LoginsListCtrl->AppendColumn("Username");
@@ -474,9 +477,12 @@ private:
 
 	wxString ProjectPath = wxEmptyString;
 
-	void ProcessPath(const wxString Path)
+	void OnRecentFile(wxCommandEvent& Event)
 	{
+	}
 
+	void OnRecentProject(wxCommandEvent& Event)
+	{
 	}
 
 	void OpenProject()
@@ -545,6 +551,10 @@ private:
 		SetLabel(wxString::Format("Stealer Checker — %s", ProjectPath));
 	}
 
+	void OnCommandLeftClick(wxMouseEvent& Event)
+	{
+	}
+
 	void TreeItemMenu(wxMouseEvent& Event)
 	{
 		FilesTreeCtrl->UnselectAll();
@@ -609,11 +619,17 @@ private:
 		Destroy();
 	}
 
+	void ProcessPath(const wxString Path)
+	{
+
+	}
+
 	wxDECLARE_EVENT_TABLE();
 };
 
 wxBEGIN_EVENT_TABLE(Frame, wxFrame)
-	EVT_TREE_ITEM_MENU(wxID_ANY, Frame::TreeItemMenu)
+	EVT_MENU_RANGE(RECENT_FILE_1, RECENT_FILE_8, Frame::OnRecentFile)
+	EVT_MENU_RANGE(RECENT_PROJECT_1, RECENT_PROJECT_4, Frame::OnRecentProject)
 	EVT_CHAR_HOOK(Frame::OnCharHook)
 	EVT_CLOSE(Frame::OnClose)
 wxEND_EVENT_TABLE()
