@@ -7,6 +7,8 @@
 #include <wx/wx.h>
 #endif
 
+#include <mimaxue/mimaxue.hpp>
+
 #include <wx/filehistory.h>
 
 #include <wx/aboutdlg.h>
@@ -809,6 +811,76 @@ private:
 			}
 
 			CurrentTreeItemId = AfterRootTreeItemId;
+		}
+
+		for (const wxString Vault : Vaults)
+		{
+			cJSON* EncryptedVaultJSON = cJSON_Parse(Vault);
+
+			if (!EncryptedVaultJSON)
+				continue;
+
+			const cJSON* Data = cJSON_GetObjectItemCaseSensitive(EncryptedVaultJSON, "data");
+
+			if (!cJSON_IsString(Data))
+			{
+				cJSON_Delete(EncryptedVaultJSON);
+				continue;
+			}
+
+			const cJSON* IV = cJSON_GetObjectItemCaseSensitive(EncryptedVaultJSON, "iv");
+
+			if (!cJSON_IsString(IV))
+			{
+				cJSON_Delete(EncryptedVaultJSON);
+				continue;
+			}
+
+			const cJSON* Salt = cJSON_GetObjectItemCaseSensitive(EncryptedVaultJSON, "salt");
+
+			if (!cJSON_IsString(Salt))
+			{
+				cJSON_Delete(EncryptedVaultJSON);
+				continue;
+			}
+
+			for (const wxString Password : Passwords)
+			{
+				auto Key = Mimaxue::Subtles::Key(Mimaxue::Subtles::KeyFormat::eRaw, (std::string)Password, Mimaxue::Subtles::KeyAlgorithm::ePBKDF2, Mimaxue::Base64::Decode(Salt->valuestring), 10000);
+				auto DecryptedVault = Mimaxue::AES::GCM::Decrypt(Mimaxue::Base64::Decode(Data->valuestring), Mimaxue::Base64::Decode(IV->valuestring), Key);
+
+				if (DecryptedVault)
+				{
+					DecryptedVault->erase(std::remove(DecryptedVault->begin(), DecryptedVault->end(), 92), DecryptedVault->end());
+					wxString Mnemonic = DecryptedVault->substr(DecryptedVault->find("mnemonic") + 11);
+					Mnemonic = Mnemonic.substr(0, Mnemonic.find('"'));
+
+					bool IsUniqueMnemonic = true;
+
+					const int WalletsListCtrlItemCount = WalletsListCtrl->GetItemCount();
+					for (int WalletsListCtrlItemIndex = 0; WalletsListCtrlItemIndex < WalletsListCtrlItemCount; WalletsListCtrlItemIndex++)
+					{
+						if (WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex, 1) == Mnemonic)
+						{
+							IsUniqueMnemonic = false;
+							break;
+						}
+					}
+
+					if (IsUniqueMnemonic)
+					{
+						Mutex.lock();
+						long bepygong = WalletsListCtrl->InsertItem(WalletsListCtrl->GetItemCount(), Path);
+						Mutex.unlock();
+						WalletsListCtrl->SetItem(bepygong, 1, Mnemonic);
+						WalletsListCtrl->SetItem(bepygong, 2, Password);
+					}
+
+					break;
+				}
+			}
+
+			cJSON_Delete(EncryptedVaultJSON);
 		}
 	}
 
