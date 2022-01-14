@@ -30,6 +30,8 @@
 #include <mutex>
 #include <map>
 
+std::mutex Mutex;
+
 class Frame : public wxFrame
 {
 	enum OwnedID
@@ -636,7 +638,9 @@ private:
 		wxTreeItemId CurrentTreeItemId = AfterRootTreeItemId;
 
 		std::unique_ptr<wxZipEntry> ZipEntry;
+
 		std::map<wxString, wxTreeItemId> TreeItemIdsMap;
+		wxArrayString Passwords, Vaults;
 
 		wxFFileInputStream FileInputStream(Path);
 		wxZipInputStream ZipInputStream(FileInputStream);
@@ -664,7 +668,55 @@ private:
 			} while (NextPosition != wxString::npos);
 
 			if (!NextMutable.IsEmpty())
+			{
 				FilesTreeCtrl->AppendItem(CurrentTreeItemId, NextMutable);
+
+				if (!ZipEntryName.compare("Passwords.txt"))
+				{
+					wxMemoryOutputStream MemoryOutputStream(nullptr);
+					ZipInputStream.Read(MemoryOutputStream);
+
+					wxString MemoryOutputStreamString(static_cast<char*>(MemoryOutputStream.GetOutputStreamBuffer()->GetBufferStart()), MemoryOutputStream.GetOutputStreamBuffer()->GetBufferSize());
+
+					NextPosition = MemoryOutputStreamString.find("URL: ");
+
+					if (NextPosition != wxString::npos)
+					{
+						while (NextPosition != wxString::npos)
+						{
+							MemoryOutputStreamString = MemoryOutputStreamString.substr(NextPosition + 5);
+
+							Mutex.lock();
+							long NextTokensListCtrlIndex = LoginsListCtrl->InsertItem(LoginsListCtrl->GetItemCount(), Path);
+							Mutex.unlock();
+
+							LoginsListCtrl->SetItem(NextTokensListCtrlIndex, 1, MemoryOutputStreamString.substr(0, MemoryOutputStreamString.find_first_of("\n\r")));
+							NextPosition = MemoryOutputStreamString.find("Username: ");
+							MemoryOutputStreamString = MemoryOutputStreamString.substr(NextPosition + 10);
+							LoginsListCtrl->SetItem(NextTokensListCtrlIndex, 2, MemoryOutputStreamString.substr(0, MemoryOutputStreamString.find_first_of("\n\r")));
+							NextPosition = MemoryOutputStreamString.find("Password: ");
+							MemoryOutputStreamString = MemoryOutputStreamString.substr(NextPosition + 10);
+							const wxString Password = MemoryOutputStreamString.substr(0, MemoryOutputStreamString.find_first_of("\n\r"));
+							LoginsListCtrl->SetItem(NextTokensListCtrlIndex, 3, Password);
+
+							bool IsUniquePassword = true;
+							for (const wxString UniquePassword : Passwords)
+							{
+								if (Password == UniquePassword && IsUniquePassword)
+								{
+									IsUniquePassword = false;
+									break;
+								}
+							}
+
+							if (IsUniquePassword)
+								Passwords.push_back(Password);
+
+							NextPosition = MemoryOutputStreamString.find("URL: ");
+						}
+					}
+				}
+			}
 
 			CurrentTreeItemId = AfterRootTreeItemId;
 		}
