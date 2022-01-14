@@ -272,10 +272,20 @@ public:
 			{
 			case wxID_OPEN:
 			{
+				wxFileDialog FileDialog(this, wxEmptyString, wxEmptyString, wxEmptyString, "Stealer Checker Project Files (*.scproj)|*.scproj|All Files (*.*)|*.*", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+
+				if (FileDialog.ShowModal() == wxID_OK)
+				{
+					ProjectPath = FileDialog.GetPath();
+					OpenProject();
+				}
+
 				break;
 			}
 			case wxID_NEW:
 			{
+
+
 				break;
 			}
 			case wxID_SAVE:
@@ -472,6 +482,32 @@ private:
 		SetLabel(wxString::Format("Stealer Checker — %s", ProjectPath));
 	}
 
+	void TreeItemMenu(wxMouseEvent& Event)
+	{
+		FilesTreeCtrl->UnselectAll();
+
+		wxMenu Menu;
+
+		wxTreeItemId CurrentFilesTreeCtrlItem = (*((wxTreeEvent*)&Event)).GetItem();
+
+		FilesTreeCtrl->SelectItem(CurrentFilesTreeCtrlItem);
+
+		if (FilesTreeCtrl->GetItemParent(CurrentFilesTreeCtrlItem) != FilesTreeCtrl->GetRootItem())
+		{
+			if (ToolBarRemoveTool->IsEnabled())
+				ToolBar->EnableTool(ToolBarRemoveTool->GetId(), false);
+
+			return;
+		}
+
+		if (!ToolBarRemoveTool->IsEnabled())
+			ToolBar->EnableTool(ToolBarRemoveTool->GetId(), true);
+
+		Menu.Append(new wxMenuItem(&Menu, wxID_REMOVE));
+
+		PopupMenu(&Menu);
+	}
+
 	void OnCharHook(wxKeyEvent& Event)
 	{
 		if (Event.GetKeyCode() == wxKeyCode::WXK_DELETE || Event.GetKeyCode() == wxKeyCode::WXK_NUMPAD_DELETE)
@@ -514,6 +550,7 @@ private:
 };
 
 wxBEGIN_EVENT_TABLE(Frame, wxFrame)
+	EVT_TREE_ITEM_MENU(wxID_ANY, Frame::TreeItemMenu)
 	EVT_CHAR_HOOK(Frame::OnCharHook)
 	EVT_CLOSE(Frame::OnClose)
 wxEND_EVENT_TABLE()
