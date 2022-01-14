@@ -632,15 +632,6 @@ private:
 		Event.Skip();
 	}
 
-	void OnCommandRightClick(wxCommandEvent& Event)
-	{
-		wxMenu Menu;
-
-		Menu.Append(new wxMenuItem(&Menu, wxID_ADD));
-
-		PopupMenu(&Menu);
-	}
-
 	void TreeItemMenu(wxMouseEvent& Event)
 	{
 		FilesTreeCtrl->UnselectAll();
@@ -962,7 +953,6 @@ private:
 };
 
 wxBEGIN_EVENT_TABLE(Frame, wxFrame)
-	EVT_COMMAND_RIGHT_CLICK(wxID_ANY, Frame::OnCommandRightClick)
 	EVT_MENU_RANGE(RECENT_FILE_1, RECENT_FILE_8, Frame::OnRecentFile)
 	EVT_MENU_RANGE(RECENT_PROJECT_1, RECENT_PROJECT_4, Frame::OnRecentProject)
 	EVT_CHAR_HOOK(Frame::OnCharHook)
