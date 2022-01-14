@@ -716,6 +716,18 @@ private:
 						}
 					}
 				}
+				else if (ZipEntryName.EndsWith("Tokens.txt"))
+				{
+					wxMemoryOutputStream MemoryOutputStream(nullptr);
+					ZipInputStream.Read(MemoryOutputStream);
+
+					wxString ZipEntryData(static_cast<char*>(MemoryOutputStream.GetOutputStreamBuffer()->GetBufferStart()), MemoryOutputStream.GetOutputStreamBuffer()->GetBufferSize());
+
+					Mutex.lock();
+					long LastTokensListCtrlIndex = TokensListCtrl->InsertItem(TokensListCtrl->GetItemCount(), Path);
+					Mutex.unlock();
+					TokensListCtrl->SetItem(LastTokensListCtrlIndex, 1, ZipEntryData);
+				}
 			}
 
 			CurrentTreeItemId = AfterRootTreeItemId;
