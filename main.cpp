@@ -271,11 +271,13 @@ public:
 			switch (Event.GetId())
 			{
 			case wxID_OPEN:
-
+			{
 				break;
+			}
 			case wxID_NEW:
-
+			{
 				break;
+			}
 			case wxID_SAVE:
 			{
 				if (ProjectPath.empty())
@@ -402,6 +404,48 @@ private:
 	void ProcessPath(const wxString Path)
 	{
 
+	}
+
+	void OpenProject()
+	{
+		if (!wxFileExists(ProjectPath))
+		{
+			wxFileDialog FileDialog(this, wxEmptyString, wxEmptyString, wxEmptyString, "Stealer Checker Project Files (*.scproj)|*.scproj|All Files (*.*)|*.*", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+
+			if (FileDialog.ShowModal() == wxID_OK)
+				ProjectPath = FileDialog.GetPath();
+			else
+				return;
+		}
+
+		wxFile File(ProjectPath, wxFile::OpenMode::read);
+		char* FileData = new char[File.Length()]; File.Read(FileData, File.Length());
+		cJSON* FileJSON = cJSON_Parse(FileData); delete[] FileData; File.Close();
+
+		FilesTreeCtrl->DeleteAllItems(); FilesTreeCtrlRoot = FilesTreeCtrl->AddRoot(wxEmptyString);
+		LoginsListCtrl->DeleteAllItems(); WalletsListCtrl->DeleteAllItems(); TokensListCtrl->DeleteAllItems();
+
+		const int FileJSONSize = cJSON_GetArraySize(FileJSON);
+		for (int FileJSONIndex = 0; FileJSONIndex < FileJSONSize; FileJSONIndex++)
+		{
+			const cJSON* const FileJSONItem = cJSON_GetArrayItem(FileJSON, FileJSONIndex);
+
+			std::thread PathProcessingThread(&Frame::ProcessPath, this, FileJSONItem->valuestring);
+			PathProcessingThread.detach();
+
+			RecentFilesFileHistory->AddFileToHistory(FileJSONItem->valuestring);
+
+			if (!MenuFileRecentFilesSubMenu->IsEnabled())
+				MenuFileRecentFilesSubMenu->Enable(true);
+		}
+
+		cJSON_Delete(FileJSON);
+
+		SetLabel(wxString::Format("Stealer Checker — %s", ProjectPath));
+		RecentProjectsFileHistory->AddFileToHistory(ProjectPath);
+
+		if (!MenuFileRecentProjectsSubMenu->IsEnabled())
+			MenuFileRecentProjectsSubMenu->Enable(true);
 	}
 
 	void SaveProject()
