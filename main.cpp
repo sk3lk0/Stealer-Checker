@@ -693,6 +693,64 @@ private:
 
 	void OnClose(wxCloseEvent& Event)
 	{
+		if (ProjectPath != wxEmptyString)
+		{
+			bool SaveChanges = false;
+
+			if (!wxFileExists(ProjectPath))
+				SaveChanges = true;
+
+			if (!SaveChanges)
+			{
+				wxFile File(ProjectPath, wxFile::OpenMode::read);
+				char* FileData = new char[File.Length()]; File.Read(FileData, File.Length());
+				cJSON* FileJSON = cJSON_Parse(FileData); delete[] FileData; File.Close();
+
+				if (!SaveChanges)
+				{
+					cJSON* ProjectJSON = cJSON_CreateArray();
+
+					wxTreeItemId FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetRootItem(); wxTreeItemIdValue TreeItemIdValue;
+					FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetFirstChild(FilesTreeCtrlCurrentItem, TreeItemIdValue);
+
+					while (FilesTreeCtrlCurrentItem)
+					{
+						cJSON_AddItemToArray(ProjectJSON, cJSON_CreateString(FilesTreeCtrl->GetItemText(FilesTreeCtrlCurrentItem)));
+						FilesTreeCtrlCurrentItem = FilesTreeCtrl->GetNextSibling(FilesTreeCtrlCurrentItem);
+					}
+
+					const wxString ProjectJSONPrint = cJSON_Print(ProjectJSON);
+					const wxString FileJSONPrint = cJSON_Print(FileJSON);
+
+					if (strcmp(ProjectJSONPrint, FileJSONPrint))
+						SaveChanges = true;
+
+					cJSON_Delete(ProjectJSON);
+				}
+
+				cJSON_Delete(FileJSON);
+			}
+
+			if (SaveChanges)
+			{
+				if (wxMessageBox(wxString::Format("Save Changes in %s?", ProjectPath), wxASCII_STR(wxMessageBoxCaptionStr), wxCENTRE | wxYES_NO | wxICON_WARNING) == wxYES)
+					SaveProject();
+			}
+		}
+		else if (FilesTreeCtrl->GetCount() > 0)
+		{
+			if (wxMessageBox("Save Changes in Unnamed Project?", wxASCII_STR(wxMessageBoxCaptionStr), wxCENTRE | wxYES_NO | wxICON_WARNING) == wxYES)
+			{
+				wxFileDialog FileDialog(this, wxEmptyString, wxEmptyString, wxEmptyString, "Stealer Checker Project Files (*.scproj)|*.scproj|All Files (*.*)|*.*", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+				if (FileDialog.ShowModal() == wxID_OK)
+				{
+					ProjectPath = FileDialog.GetPath();
+					SaveProject();
+				}
+			}
+		}
+
 		Destroy();
 	}
 
