@@ -1,5 +1,6 @@
 <h3 align="center">Stealer Checker</h3>
 <p align="center">Get information from RedLine logs.</p>
+![Test](demonstration.webp)
 
 ## Getting Started
 ### Prerequisites
