@@ -10,8 +10,10 @@
 - Mimaxue v4.5.3
 - cJSON v1.7.15
 
-## Installation
-```git clone https://github.com/r3ady4anyth1ng/Stealer-Checker.git```
+## Installation on Linux
+- Download [latest](https://github.com/r3ady4anyth1ng/Stealer-Checker/releases/latest) Linux release
+- Make it executable ```chmod a+x StealerChecker-Linux.AppImage```
+- And run! ```./StealerChecker-Linux.AppImage```
 
 ## License
 Distributed under the Unlicense. See [LICENSE](LICENSE) for more information.
